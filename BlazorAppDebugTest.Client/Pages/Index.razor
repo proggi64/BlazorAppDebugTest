@@ -1,0 +1,63 @@
+﻿@page "/index"
+@rendermode InteractiveWebAssembly
+
+@using System.IO
+@using SkiaSharp
+
+<h3>PDF mit GDI-Funktionen</h3>
+
+<button @onclick="CreateLink">PDF erzeugen</button>
+
+@if (pdfBytes != null && pdfBytes.Length > 0)
+{
+	<p>
+        <a href="data:application/pdf;base64,@Convert.ToBase64String(pdfBytes)" download="demo.pdf">Download PDF</a>
+	</p>
+}
+
+@code {
+    private byte[]? pdfBytes;
+
+    private void CreateLink()
+    {
+        pdfBytes = null;
+        GeneratePdf();
+        StateHasChanged(); // <--- Hinzugefügt, um das UI zu aktualisieren
+    }
+
+    private void GeneratePdf()
+    {
+        using var stream = new MemoryStream();
+        using var gdi = new GdiGraphics(stream);
+
+        gdi.SetFont("Arial", 20);
+        gdi.SetTextColor(SKColors.Black);
+        gdi.DrawText("Hallo Welt!", 100, 100);
+
+        gdi.SetPenColor(SKColors.Blue);
+        gdi.DrawLine(100, 120, 300, 120);
+
+        gdi.BeginPath();
+        gdi.AddRectangle(100, 150, 100, 100);
+        gdi.SetBrushColor(SKColors.LightGreen);
+        gdi.FillPath();
+        gdi.StrokePath();
+
+        gdi.Save();
+        gdi.Translate(300, 300);
+        gdi.Rotate(30);
+        gdi.SetBrushColor(SKColors.Orange);
+        gdi.DrawRectangle(-50, -50, 100, 100);
+        gdi.Restore();
+
+        gdi.SetClipRect(100, 400, 200, 50);
+        gdi.SetTextColor(SKColors.Red);
+        gdi.DrawText("Dies ist ein langer Text, der abgeschnitten wird.", 100, 430);
+        gdi.ResetClip();
+
+        gdi.EndPage();
+        gdi.Close();
+
+        pdfBytes = gdi.GetPdfBytes();
+    }
+}
